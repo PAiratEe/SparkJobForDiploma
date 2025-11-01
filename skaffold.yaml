@@ -1,0 +1,30 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: spark-job
+
+build:
+  local:
+    push: true
+  artifacts:
+    - image: pairate/spark-job
+      context: .
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        infer:
+          - "src/**"
+          - "pom.xml"
+
+manifests:
+  rawYaml:
+    - spark-job-deployment.yaml
+
+deploy:
+  kubectl: {}
+
+portForward:
+  - resourceType: statefulset
+    resourceName: spark-job
+    namespace: default
+    port: 4040

@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: spark-job
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-job
+  template:
+    metadata:
+      labels:
+        app: spark-job
+    spec:
+      containers:
+        - name: spark-job
+          image: pairate/spark-job:latest
+          imagePullPolicy: Always
+          command:
+            - "/bin/bash"
+            - "-c"
+          args:
+            - |
+              /opt/spark/bin/spark-submit \
+                --master k8s://https://192.168.49.2:8443 \
+                --deploy-mode cluster \
+                --class org.example.Main \
+                --conf spark.kubernetes.file.upload.path="s3a://airbyte-bucket/spark" \
+                --conf spark.dynamicAllocation.enabled=false \
+                --conf spark.executor.instances=2 \
+                --conf spark.kubernetes.container.image=pairate/spark-job:latest \
+                --conf spark.hadoop.fs.s3a.endpoint=http://airbyte-minio-svc:9000 \
+                --conf spark.hadoop.fs.s3a.path.style.access=true \
+                --conf spark.hadoop.fs.s3a.access.key=minio \
+                --conf spark.hadoop.fs.s3a.secret.key=minio123 \
+                --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem \
+                --conf spark.kubernetes.driverEnv.YEAR=2025 \
+                --conf spark.kubernetes.driverEnv.MONTH=10 \
+                --conf spark.kubernetes.driverEnv.DAY=27 \
+                /opt/spark/work-dir/SparkJob-1.0-SNAPSHOT.jar
