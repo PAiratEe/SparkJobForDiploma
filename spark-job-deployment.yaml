@@ -35,6 +35,6 @@ spec:
                 --conf spark.hadoop.fs.s3a.secret.key=minio123 \
                 --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem \
                 --conf spark.kubernetes.driverEnv.YEAR=2025 \
-                --conf spark.kubernetes.driverEnv.MONTH=10 \
-                --conf spark.kubernetes.driverEnv.DAY=27 \
+                --conf spark.kubernetes.driverEnv.MONTH=11 \
+                --conf spark.kubernetes.driverEnv.DAY=01 \
                 /opt/spark/work-dir/SparkJob-1.0-SNAPSHOT.jar

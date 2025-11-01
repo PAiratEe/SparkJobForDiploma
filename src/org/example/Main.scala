@@ -3,8 +3,6 @@ package org.example
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, MapType, StructType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.json4s._
-import org.json4s.jackson.JsonMethods._
 
 object Main {
 
@@ -22,17 +20,11 @@ object Main {
     val env = sys.env
 
     val year = env.getOrElse("YEAR", throw new NoSuchElementException("YEAR env not found"))
-    var month = env.getOrElse("MONTH", throw new NoSuchElementException("MONTH env not found"))
-    month = if (month.toInt < 10)
-      "0" + month
-    else
-      month
-
-    var day = env.getOrElse("DAY", throw new NoSuchElementException("DAY env not found"))
-    day = if (day.toInt < 10)
-      "0" + day
-    else
-      day
+    println(year)
+    val month = env.getOrElse("MONTH", throw new NoSuchElementException("MONTH env not found")).reverse.padTo(2, '0').reverse
+    println(month)
+    val day = env.getOrElse("DAY", throw new NoSuchElementException("DAY env not found")).reverse.padTo(2, '0').reverse
+    println(day)
 
     println(s"📅 Running Spark job for date: $year-$month-$day")
 
