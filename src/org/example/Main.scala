@@ -1,15 +1,10 @@
 package org.example
 
-import org.apache.http.client.methods.HttpPost
-import org.apache.http.entity.StringEntity
-import org.apache.http.impl.client.HttpClients
-import org.apache.http.util.EntityUtils
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, MapType, StructType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-import org.json4s.jackson.Serialization.write
 
 object Main {
 
@@ -25,7 +20,6 @@ object Main {
   def main(args: Array[String]): Unit = {
 
     val env = sys.env
-    println("ENV VARS: " + env.mkString(", "))
 
     val year = env.getOrElse("YEAR", throw new NoSuchElementException("YEAR env not found")).toInt
     val month = env.getOrElse("MONTH", throw new NoSuchElementException("MONTH env not found")).toInt
@@ -37,10 +31,9 @@ object Main {
     val clickhouseUrl = "jdbc:clickhouse://clickhouse.default.svc.cluster.local:8123"
     val clickhouseUser = "default"
     val clickhousePassword = "dCkUgJH3JI"
-    val clickhouseTable = env.getOrElse("TABLE", throw new NoSuchElementException("TABLE env not found"))
+    val clickhouseTable = "wikipedia_pageviews_top"
 
-    val path = env.getOrElse("PATH", throw new NoSuchElementException("PATH env not found"))
-    val input = s"$s3Bucket/$path/$year/$month/$day/*.json"
+    val input = s"$s3Bucket/wikipedia_pageviews/top/$year/$month/$day/*.json"
 
     val jsonDF = spark.read.json(input)
 
@@ -56,9 +49,7 @@ object Main {
 
     println("✅ Расплющенная схема:")
 
-    //val validatedDF = validateWithGE(normalized)
-
-    val processedPath = s"s3a://airbyte-bucket/api/processed/$path/$year/$month/$day/"
+    val processedPath = s"s3a://airbyte-bucket/api/processed/wikipedia_pageviews/top/$year/$month/$day/"
 
     normalized.printSchema()
 
@@ -79,49 +70,6 @@ object Main {
     println(s"✅ Data successfully written to ClickHouse table [$clickhouseTable] and S3 [$processedPath]")
 
     spark.stop()
-  }
-
-  private def validateWithGE(df: DataFrame): DataFrame = {
-
-    import spark.implicits._
-    implicit val formats: Formats = DefaultFormats
-
-    val geRestUrl = sys.env.getOrElse("GE_REST_URL", "http://great-expectations:5000/validate")
-
-    val rows = df.toJSON.collect().toSeq
-    val parsedRows = rows.map(parse(_).extract[Map[String, Any]])
-
-    val client = HttpClients.createDefault()
-    val post = new HttpPost(geRestUrl)
-    post.setHeader("Content-type", "application/json")
-
-    val requestBody = write(Map(
-      "suite_name" -> "spark_clickhouse_suite",
-      "data" -> parsedRows
-    ))
-
-    post.setEntity(new StringEntity(requestBody, "UTF-8"))
-
-    val response = client.execute(post)
-    val responseString = EntityUtils.toString(response.getEntity)
-    response.close()
-    client.close()
-
-    val jsonResp = parse(responseString).extract[Map[String, Any]]
-    val validMask: Seq[Boolean] = jsonResp.get("result") match {
-      case Some(list: List[Boolean]) => list
-      case _ =>
-        println(s"⚠️ Can't parse GE response: $responseString")
-        Seq.fill(rows.size)(false)
-    }
-
-    val validated = df.withColumn("ge_valid", typedLit(validMask))
-    val validRows = validated.filter($"ge_valid" === true).drop("ge_valid")
-    val invalidCount = validMask.count(!_)
-
-    println(s"✅ GE validation finished: ${validRows.count()} passed, $invalidCount failed")
-
-    validRows
   }
 
   private def normalizeForJdbc(df: DataFrame, prefix: String = ""): DataFrame = {
