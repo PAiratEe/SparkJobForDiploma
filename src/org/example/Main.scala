@@ -21,9 +21,9 @@ object Main {
 
     val env = sys.env
 
-    val year = env.getOrElse("YEAR", throw new NoSuchElementException("YEAR env not found")).toInt
-    val month = env.getOrElse("MONTH", throw new NoSuchElementException("MONTH env not found")).toInt
-    val day = env.getOrElse("DAY", throw new NoSuchElementException("DAY env not found")).toInt
+    val year = env.getOrElse("YEAR", throw new NoSuchElementException("YEAR env not found"))
+    val month = env.getOrElse("MONTH", throw new NoSuchElementException("MONTH env not found"))
+    val day = env.getOrElse("DAY", throw new NoSuchElementException("DAY env not found"))
 
     println(s"📅 Running Spark job for date: $year-$month-$day")
 
