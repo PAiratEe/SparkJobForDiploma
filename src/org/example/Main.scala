@@ -27,9 +27,9 @@ object Main {
     val env = sys.env
     println("ENV VARS: " + env.mkString(", "))
 
-    val year = env.getOrElse("YEAR", throw new NoSuchElementException("YEAR env not found")).toInt
-    val month = env.getOrElse("MONTH", throw new NoSuchElementException("MONTH env not found")).toInt
-    val day = env.getOrElse("DAY", throw new NoSuchElementException("DAY env not found")).toInt
+    val year = env.getOrElse("YEAR", throw new NoSuchElementException("YEAR env not found"))
+    val month = env.getOrElse("MONTH", throw new NoSuchElementException("MONTH env not found")).reverse.padTo(2, '0').reverse
+    val day = env.getOrElse("DAY", throw new NoSuchElementException("DAY env not found")).reverse.padTo(2, '0').reverse
 
     println(s"📅 Running Spark job for date: $year-$month-$day")
 
@@ -39,7 +39,7 @@ object Main {
     val clickhousePassword = "dCkUgJH3JI"
     val clickhouseTable = env.getOrElse("TABLE", throw new NoSuchElementException("TABLE env not found"))
 
-    val path = env.getOrElse("PATH", throw new NoSuchElementException("PATH env not found"))
+    val path = env.getOrElse("DATA_PATH", throw new NoSuchElementException("PATH env not found"))
     val input = s"$s3Bucket/$path/$year/$month/$day/*.json"
 
     val jsonDF = spark.read.json(input)
