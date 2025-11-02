@@ -56,17 +56,17 @@ object Main {
 
     println("✅ Расплющенная схема:")
 
-    //val validatedDF = validateWithGE(normalized)
+    val validatedDF = validateWithGE(normalized, clickhouseTable)
 
     val processedPath = s"s3a://airbyte-bucket/api/processed/$path/$year/$month/$day/"
 
-    normalized.printSchema()
+    validatedDF.printSchema()
 
-    normalized.write
+    validatedDF.write
       .mode("append")
       .parquet(processedPath)
 
-    normalized.write
+    validatedDF.write
       .mode("append")
       .format("jdbc")
       .option("url", clickhouseUrl)
@@ -81,7 +81,7 @@ object Main {
     spark.stop()
   }
 
-  private def validateWithGE(df: DataFrame): DataFrame = {
+  private def validateWithGE(df: DataFrame, table: String): DataFrame = {
 
     import spark.implicits._
     implicit val formats: Formats = DefaultFormats
@@ -96,7 +96,7 @@ object Main {
     post.setHeader("Content-type", "application/json")
 
     val requestBody = write(Map(
-      "suite_name" -> "spark_clickhouse_suite",
+      "suite_name" -> s"${table}_suite",
       "data" -> parsedRows
     ))
 
