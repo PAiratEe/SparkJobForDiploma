@@ -86,7 +86,7 @@ object Main {
     import spark.implicits._
     implicit val formats: Formats = DefaultFormats
 
-    val geRestUrl = sys.env.getOrElse("GE_REST_URL", "http://great-expectations:5000/validate")
+    val geRestUrl = sys.env.getOrElse("GE_REST_URL", "http://ge-server.default.svc.cluster.local:5000/validate")
 
     val rows = df.toJSON.collect().toSeq
     val parsedRows = rows.map(parse(_).extract[Map[String, Any]])
@@ -115,11 +115,17 @@ object Main {
         Seq.fill(rows.size)(false)
     }
 
-    val validated = df.withColumn("ge_valid", typedLit(validMask))
-    val validRows = validated.filter($"ge_valid" === true).drop("ge_valid")
-    val invalidCount = validMask.count(!_)
+    val indexedDF = df.withColumn("idx", monotonically_increasing_id())
 
-    println(s"✅ GE validation finished: ${validRows.count()} passed, $invalidCount failed")
+    val maskDF = validMask.zipWithIndex.toSeq.toDF("ge_valid", "idx")
+      .select($"idx".cast("long"), $"ge_valid".cast("boolean"))
+
+    val validRows = indexedDF
+      .join(maskDF, Seq("idx"))
+      .filter($"ge_valid" === true)
+      .drop("ge_valid", "idx")
+
+    println(s"✅ GE validation finished: ${validMask.count(_ == true)} passed, ${validMask.count(_ == false)} failed")
 
     validRows
   }

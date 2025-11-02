@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: spark-job
-          image: pairate/spark-job:0.0.4
+          image: pairate/spark-job:0.0.3
           imagePullPolicy: Always
           command:
             - "/bin/bash"
@@ -28,7 +28,7 @@ spec:
                 --conf spark.kubernetes.file.upload.path="s3a://airbyte-bucket/spark" \
                 --conf spark.dynamicAllocation.enabled=false \
                 --conf spark.executor.instances=2 \
-                --conf spark.kubernetes.container.image=pairate/spark-job:0.0.4 \
+                --conf spark.kubernetes.container.image=pairate/spark-job:0.0.3 \
                 --conf spark.hadoop.fs.s3a.endpoint=http://airbyte-minio-svc:9000 \
                 --conf spark.hadoop.fs.s3a.path.style.access=true \
                 --conf spark.hadoop.fs.s3a.access.key=minio \
@@ -37,6 +37,6 @@ spec:
                 --conf spark.kubernetes.driverEnv.YEAR=2025 \
                 --conf spark.kubernetes.driverEnv.MONTH=11 \
                 --conf spark.kubernetes.driverEnv.DAY=01 \
-                --conf spark.kubernetes.driverEnv.DATA_PATH="wikipedia_pageviews/per-article" \
-                --conf spark.kubernetes.driverEnv.TABLE="wikipedia_pageviews_per_article" \
+                --conf spark.kubernetes.driverEnv.DATA_PATH="wikipedia_pageviews/top" \
+                --conf spark.kubernetes.driverEnv.TABLE="wikipedia_pageviews_top" \
                 /opt/spark/work-dir/SparkJob-1.0-SNAPSHOT.jar
