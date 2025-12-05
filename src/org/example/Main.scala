@@ -1,11 +1,11 @@
 package org.example
 
 import org.apache.http.client.methods.HttpPost
-import org.apache.http.entity.StringEntity
+import org.apache.http.entity.{ContentType, StringEntity}
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.util.EntityUtils
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{ArrayType, MapType, StructType}
+import org.apache.spark.sql.types.{ArrayType, MapType, StringType, StructType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -55,12 +55,11 @@ object Main {
     val normalized = normalizeForJdbc(df)
 
     println("✅ Расплющенная схема:")
+    normalized.printSchema()
 
     val validatedDF = validateWithGE(normalized, clickhouseTable)
 
     val processedPath = s"s3a://airbyte-bucket/api/processed/$path/$year/$month/$day/"
-
-    validatedDF.printSchema()
 
     validatedDF.write
       .mode("append")
@@ -100,7 +99,7 @@ object Main {
       "data" -> parsedRows
     ))
 
-    post.setEntity(new StringEntity(requestBody, "UTF-8"))
+    post.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON))
 
     val response = client.execute(post)
     val responseString = EntityUtils.toString(response.getEntity)
@@ -151,8 +150,34 @@ object Main {
           }
           currentDF = currentDF.drop(field.name)
 
+        case _: org.apache.spark.sql.types.BooleanType =>
+          currentDF = currentDF.withColumn(colName, col(field.name).cast("int"))
+
+        case _: org.apache.spark.sql.types.LongType =>
+          currentDF = currentDF.withColumn(colName, col(field.name).cast("long"))
+
+        case _: org.apache.spark.sql.types.IntegerType =>
+          currentDF = currentDF.withColumn(colName, col(field.name).cast("long"))
+
+        case _: org.apache.spark.sql.types.DoubleType =>
+          currentDF = currentDF.withColumn(colName, col(field.name).cast("double"))
+
+        case _: org.apache.spark.sql.types.FloatType =>
+          currentDF = currentDF.withColumn(colName, col(field.name).cast("double"))
+
         case _: ArrayType | _: MapType =>
-          currentDF = currentDF.withColumn(colName, to_json(col(field.name))).drop(field.name)
+          currentDF = currentDF.withColumn(colName, to_json(col(field.name)))
+
+        case _: StringType =>
+          val tryTs = to_timestamp(col(field.name),
+            "yyyy-MM-dd'T'HH:mm:ss[.SSSSSS][XXX][X]"
+          )
+
+          currentDF = currentDF.withColumn(
+            colName,
+            when(tryTs.isNotNull, tryTs)
+              .otherwise(col(field.name))
+          )
 
         case _ =>
       }

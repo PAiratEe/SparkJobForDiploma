@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: spark-job
-          image: pairate/spark-job:0.0.3
+          image: pairate/spark-job:0.0.5
           imagePullPolicy: Always
           command:
             - "/bin/bash"
@@ -28,15 +28,22 @@ spec:
                 --conf spark.kubernetes.file.upload.path="s3a://airbyte-bucket/spark" \
                 --conf spark.dynamicAllocation.enabled=false \
                 --conf spark.executor.instances=2 \
-                --conf spark.kubernetes.container.image=pairate/spark-job:0.0.3 \
+                --conf spark.kubernetes.container.image=pairate/spark-job:0.0.5 \
                 --conf spark.hadoop.fs.s3a.endpoint=http://airbyte-minio-svc:9000 \
                 --conf spark.hadoop.fs.s3a.path.style.access=true \
                 --conf spark.hadoop.fs.s3a.access.key=minio \
                 --conf spark.hadoop.fs.s3a.secret.key=minio123 \
                 --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem \
                 --conf spark.kubernetes.driverEnv.YEAR=2025 \
-                --conf spark.kubernetes.driverEnv.MONTH=11 \
-                --conf spark.kubernetes.driverEnv.DAY=01 \
-                --conf spark.kubernetes.driverEnv.DATA_PATH="wikipedia_pageviews/top" \
-                --conf spark.kubernetes.driverEnv.TABLE="wikipedia_pageviews_top" \
+                --conf spark.kubernetes.driverEnv.MONTH=12 \
+                --conf spark.kubernetes.driverEnv.DAY=3 \
+                --conf spark.kubernetes.driverEnv.DATA_PATH=sample_data/purchases \
+                --conf spark.kubernetes.driverEnv.TABLE=sample_data_purchases \
+                --conf spark.eventLog.enabled=true \
+                --conf spark.eventLog.dir=s3a://airbyte-bucket/spark-logs/sample-data/purchases \
+                --jars /opt/spark/jars/acryl-spark-lineage_2.12-0.2.18.jar \
+                --conf spark.extraListeners=datahub.spark.DatahubSparkListener \
+                --conf spark.datahub.rest.server=http://datahub-datahub-gms:8080 \
+                --conf spark.datahub.write.sync=true \
+                --conf spark.datahub.rest.token="eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6IjlkOTdhMzAwLTQyYmItNGMxMC04MWMzLTIzMjJlMTZhMmQzNyIsInN1YiI6ImRhdGFodWIiLCJpc3MiOiJkYXRhaHViLW1ldGFkYXRhLXNlcnZpY2UifQ.CkAxNq5Kyx4tsc2KCDFROUR8EUbMIgdlmpAHOizZcGg" \
                 /opt/spark/work-dir/SparkJob-1.0-SNAPSHOT.jar
